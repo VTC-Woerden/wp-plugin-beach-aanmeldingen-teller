@@ -97,14 +97,23 @@ function renderAanmeldingen() {
   // $submissions = [];
   $inschrijvingen = [];
 
-  foreach($submissions as $submission) {
-    array_push($inschrijvingen,$submission->get_field_values());
-  }
-
   $jeugdTeams = [];
   $miniTeams = [];
 
-  foreach ($inschrijvingen as $entry) {
+  $today = date('Y-m-d');
+
+  foreach ($submissions as $submission) {
+    $entry = $submission->get_field_values();
+    
+    $reflection = new ReflectionClass($submission);
+    $prop = $reflection->getProperty('_sub_date');
+    $prop->setAccessible(true);
+    $date = $prop->getValue($submission);
+
+    if (strtotime($date) < $today) {
+        continue;
+    }
+
     $team = $entry['team_1731618629217'] ?? '';
 
     if (str_starts_with($team, 'meisjes-') || str_starts_with($team, 'jongens-')) {
