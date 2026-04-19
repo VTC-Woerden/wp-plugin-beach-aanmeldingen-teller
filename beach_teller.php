@@ -50,7 +50,7 @@ function renderAanmeldingen() {
       LEFT JOIN `wp_mollie_forms_registration_fields` as teamsamenstelling ON teamsamenstelling.registration_id = r.id AND teamsamenstelling.field = 'Teamsamenstelling'
       LEFT JOIN `wp_mollie_forms_registration_fields` as voornaam ON voornaam.registration_id = r.id AND voornaam.field = 'Voornaam'
       LEFT JOIN `wp_mollie_forms_registration_fields` as achternaam ON achternaam.registration_id = r.id AND achternaam.field = 'Achternaam'
-  WHERE rp.description = 'Zondagtoernooi (4x4)' 
+  WHERE rp.description = 'Lazy sunday toernooi (4x4)' 
       AND p.payment_mode <> 'test' 
       AND (p.payment_status = 'paid' OR p.payment_status = '') 
       AND YEAR(r.created_at) = YEAR(CURDATE())");
