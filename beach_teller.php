@@ -166,8 +166,6 @@ function renderAanmeldingen() {
   $jeugdInschrijving = [];
   $miniInschrijving = [];
 
-  var_dump($jeugdInschrijvingen);
-
   foreach ($jeugdInschrijvingen as $submission) {
     if (str_starts_with($submission->categorie, 'jeugd')) {
       $jeugdInschrijving[] = $submission;
