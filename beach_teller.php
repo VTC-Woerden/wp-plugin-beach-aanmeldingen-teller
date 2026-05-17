@@ -125,7 +125,7 @@ function renderAanmeldingen() {
   $jeugdTeams = [];
   $miniTeams = [];
 
-  $today = date('Y-m-d');
+  $thisYear = date('Y');
 
   foreach ($submissions as $submission) {
     $entry = $submission->get_field_values();
@@ -135,7 +135,7 @@ function renderAanmeldingen() {
     $prop->setAccessible(true);
     $date = $prop->getValue($submission);
 
-    if (strtotime($date) < $today) {
+    if (strtotime($date) < strtotime($thisYear . '-01-01')) {
         continue;
     }
 
