@@ -118,33 +118,61 @@ function renderAanmeldingen() {
       AND (p.payment_status = 'paid' OR p.payment_status = '') 
       AND YEAR(r.created_at) = YEAR(CURDATE())");
 
-  $submissions = Ninja_Forms()->form(4)->get_subs();
-  // $submissions = [];
-  $inschrijvingen = [];
+  $jeugdInschrijvingen = $wpdb->get_results("
+    SELECT
+      p.ID AS submission_id,
+      p.post_date AS submitted_at,
+      seq.meta_value AS visible_submission_number,
+      form_id.meta_value AS form_id,
 
-  $jeugdTeams = [];
-  $miniTeams = [];
+      MAX(CASE WHEN f.`key` = 'voornaam_1731618363543' THEN pm.meta_value END) AS voornaam,
+      MAX(CASE WHEN f.`key` = 'achternaam_1731618372881' THEN pm.meta_value END) AS achternaam,
+      MAX(CASE WHEN f.`key` = 'email' THEN pm.meta_value END) AS email,
+      MAX(CASE WHEN f.`key` = 'team_1731618629217' THEN pm.meta_value END) AS team,
+      MAX(CASE WHEN f.`key` = 'opmerkingen_1731618872761' THEN pm.meta_value END) AS opmerkingen,
+      MAX(CASE WHEN f.`key` = 'categorie_1747165107337' THEN pm.meta_value END) AS categorie,
+      MAX(CASE WHEN f.`key` = 'pannenkoeken_1747165394429' THEN pm.meta_value END) AS pannenkoeken
 
-  $thisYear = date('Y');
+    FROM wp_posts p
 
-  foreach ($submissions as $submission) {
-    $entry = $submission->get_field_values();
-    
-    $reflection = new ReflectionClass($submission);
-    $prop = $reflection->getProperty('_sub_date');
-    $prop->setAccessible(true);
-    $date = $prop->getValue($submission);
+    JOIN wp_postmeta form_id
+      ON form_id.post_id = p.ID
+    AND form_id.meta_key = '_form_id'
 
-    if (strtotime($date) < strtotime($thisYear . '-01-01')) {
-        continue;
-    }
+    LEFT JOIN wp_postmeta seq
+      ON seq.post_id = p.ID
+    AND seq.meta_key = '_seq_num'
 
-    $team = $entry['team_1731618629217'] ?? '';
+    JOIN wp_postmeta pm
+      ON pm.post_id = p.ID
 
-    if (str_starts_with($team, 'meisjes-') || str_starts_with($team, 'jongens-')) {
-      $jeugdTeams[] = $entry;
-      } elseif ($team === 'mini-s') {
-        $miniTeams[] = $entry;
+    JOIN wp_nf3_fields f
+      ON pm.meta_key = CONCAT('_field_', f.id)
+    AND f.parent_id = form_id.meta_value
+
+    WHERE p.post_type = 'nf_sub'
+      AND form_id.meta_value = '4'
+      AND YEAR(p.post_date) = YEAR(CURDATE())
+
+    GROUP BY
+      p.ID,
+      p.post_date,
+      seq.meta_value,
+      form_id.meta_value
+
+    ORDER BY p.ID DESC;
+  ");
+
+  $jeugdInschrijving = [];
+  $miniInschrijving = [];
+
+  var_dump($jeugdInschrijvingen);
+
+  foreach ($jeugdInschrijvingen as $submission) {
+    if (str_starts_with($submission->categorie, 'jeugd')) {
+      $jeugdInschrijving[] = $submission;
+    } elseif ($submission->categorie === 'mini-s') {
+      $miniInschrijving[] = $submission;
     }
   }
 
@@ -224,21 +252,48 @@ function renderAanmeldingen() {
   <?php
   }
 
-  function renderTableNina($data) {
+  function renderTableNinaJeugd($data) {
   ?>
   <table class="widefat striped fixed">
         <thead>
           <tr>
             <th>Voornaam</th>
-            <th>Achgternaam</th>
+            <th>Achternaam</th>
+            <th>Opmerkingen</th>
             <th>Team</th>
           </tr>
         </thead>
           <?php foreach ($data as $row){ ?>
           <tr>
-              <td><?php echo $row["voornaam_1731618363543"] ?></td>
-              <td><?php echo $row["achternaam_1731618372881"] ?></td>
-              <td><?php echo $row["team_1731618629217"] ?></td>
+              <td><?php echo $row->voornaam ?></td>
+              <td><?php echo $row->achternaam ?></td>
+              <td><?php echo $row->opmerkingen ?></td>
+              <td><?php echo $row->team ?></td>
+          </tr>
+          <?php } ?>
+  </table>
+  <?php
+  }
+
+    function renderTableNinaMini($data) {
+  ?>
+  <table class="widefat striped fixed">
+        <thead>
+          <tr>
+            <th>Voornaam</th>
+            <th>Achternaam</th>
+            <th>Opmerkingen</th>
+            <th>Pannenkoeken</th>
+            <th>Team</th>
+          </tr>
+        </thead>
+          <?php foreach ($data as $row){ ?>
+          <tr>
+              <td><?php echo $row->voornaam ?></td>
+              <td><?php echo $row->achternaam ?></td>
+              <td><?php echo $row->opmerkingen ?></td>
+              <td><?php echo $row->pannenkoeken ?></td>
+              <td><?php echo $row->team ?></td>
           </tr>
           <?php } ?>
   </table>
@@ -278,12 +333,12 @@ function renderAanmeldingen() {
       <?= renderTableBedrijven($bedrijven) ?>
       <hr>
   
-      <h2>Jeugd (totaal <?= count($jeugdTeams) ?>)</h2>
-      <?= renderTableNina($jeugdTeams) ?>
+      <h2>Jeugd (totaal <?= count($jeugdInschrijving) ?>)</h2>
+      <?= renderTableNinaJeugd($jeugdInschrijving) ?>
       <hr>
   
-      <h2>Mini (totaal <?= count($miniTeams) ?>)</h2>
-      <?= renderTableNina($miniTeams) ?>
+      <h2>Mini (totaal <?= count($miniInschrijving) ?>)</h2>
+      <?= renderTableNinaMini($miniInschrijving) ?>
       <hr>
   </div>
   
