@@ -21,7 +21,8 @@ function renderAanmeldingen() {
       rf.value as teamnaam,
       voornaam.value as voornaam,
       achternaam.value as achternaam,
-      teamsamenstelling.value as teamsamenstelling
+      teamsamenstelling.value as teamsamenstelling,
+      rp.quantity as aantal_teams
   FROM `wp_mollie_forms_payments` as p 
       JOIN `wp_mollie_forms_registrations` as r ON p.registration_id = r.id 
       JOIN `wp_mollie_forms_registration_price_options` as rp ON rp.registration_id = r.id 
@@ -41,7 +42,8 @@ function renderAanmeldingen() {
       rf.value as teamnaam,
       voornaam.value as voornaam,
       achternaam.value as achternaam,
-      teamsamenstelling.value as teamsamenstelling
+      teamsamenstelling.value as teamsamenstelling,
+      rp.quantity as aantal_teams
   FROM `wp_mollie_forms_payments` as p 
       JOIN `wp_mollie_forms_registrations` as r ON p.registration_id = r.id 
       JOIN `wp_mollie_forms_registration_price_options` as rp ON rp.registration_id = r.id 
@@ -55,13 +57,35 @@ function renderAanmeldingen() {
       AND (p.payment_status = 'paid' OR p.payment_status = '') 
       AND YEAR(r.created_at) = YEAR(CURDATE())");
 
+    $zondag2x2 = $wpdb->get_results("
+    SELECT
+        r.id as registration_id,
+        rf.value as teamnaam,
+        voornaam.value as voornaam,
+        achternaam.value as achternaam,
+        teamsamenstelling.value as teamsamenstelling,
+        rp.quantity as aantal_teams
+    FROM `wp_mollie_forms_payments` as p 
+        JOIN `wp_mollie_forms_registrations` as r ON p.registration_id = r.id 
+        JOIN `wp_mollie_forms_registration_price_options` as rp ON rp.registration_id = r.id 
+        JOIN `wp_mollie_forms_customers` as c ON r.customer_id = c.customer_id 
+        JOIN `wp_mollie_forms_registration_fields` as rf ON rf.registration_id = r.id AND rf.field = 'Teamnaam'
+        LEFT JOIN `wp_mollie_forms_registration_fields` as teamsamenstelling ON teamsamenstelling.registration_id = r.id AND teamsamenstelling.field = 'Teamsamenstelling'
+        LEFT JOIN `wp_mollie_forms_registration_fields` as voornaam ON voornaam.registration_id = r.id AND voornaam.field = 'Voornaam'
+        LEFT JOIN `wp_mollie_forms_registration_fields` as achternaam ON achternaam.registration_id = r.id AND achternaam.field = 'Achternaam'
+    WHERE rp.description = 'Lazy sunday toernooi (2x2)' 
+        AND p.payment_mode <> 'test' 
+        AND (p.payment_status = 'paid' OR p.payment_status = '') 
+        AND YEAR(r.created_at) = YEAR(CURDATE())");
+
   $king = $wpdb->get_results("
   SELECT
       r.id as registration_id,
       rf.value as teamnaam,
       voornaam.value as voornaam,
       achternaam.value as achternaam,
-      teamsamenstelling.value as teamsamenstelling
+      teamsamenstelling.value as teamsamenstelling,
+      rp.quantity as aantal_teams
   FROM `wp_mollie_forms_payments` as p 
       JOIN `wp_mollie_forms_registrations` as r ON p.registration_id = r.id 
       JOIN `wp_mollie_forms_registration_price_options` as rp ON rp.registration_id = r.id 
@@ -80,7 +104,8 @@ function renderAanmeldingen() {
       r.id as registration_id,
       rf.value as teamnaam,
       bbq.quantity as bbq,
-      munten.quantity as munten
+      munten.quantity as munten,
+      rp.quantity as aantal_teams
   FROM `wp_mollie_forms_payments` as p 
       JOIN `wp_mollie_forms_registrations` as r ON p.registration_id = r.id 
       JOIN `wp_mollie_forms_registration_price_options` as rp ON rp.registration_id = r.id 
@@ -117,8 +142,8 @@ function renderAanmeldingen() {
     $team = $entry['team_1731618629217'] ?? '';
 
     if (str_starts_with($team, 'meisjes-') || str_starts_with($team, 'jongens-')) {
-        $jeugdTeams[] = $entry;
-    } elseif ($team === 'mini-s') {
+      $jeugdTeams[] = $entry;
+      } elseif ($team === 'mini-s') {
         $miniTeams[] = $entry;
     }
   }
@@ -151,6 +176,7 @@ function renderAanmeldingen() {
         <th>Teamnaam</th>
         <th>Bbq bonnen</th>
         <th>Aantal munten</th>
+        <th>Aantal teams</th>
         <th>Id</th>
       </tr>
     </thead>
@@ -160,6 +186,7 @@ function renderAanmeldingen() {
         <td><?php echo $value->teamnaam ?></td>
         <td><?php echo $value->bbq ?></td>
         <td><?php echo $value->munten ?></td>
+        <td><?php echo $value->aantal_teams ?></td>
         <td><?php echo $value->registration_id ?></td>
       </tr>
       <?php } ?>
@@ -177,6 +204,7 @@ function renderAanmeldingen() {
           <th>Voornaam</th>
           <th>Achternaam</th>
           <th>Teamsamenstelling</th>
+          <th>Aantal teams</th>
           <th>Id</th>
         </tr>
       </thead>
@@ -188,6 +216,7 @@ function renderAanmeldingen() {
             <td><?php echo $value->voornaam ?></td>
             <td><?php echo $value->achternaam ?></td>
             <td><?php echo $value->teamsamenstelling ?></td>
+            <td><?php echo $value->aantal_teams ?></td>
             <td><?php echo $value->registration_id ?></td>
           </tr>
           <?php } ?>
@@ -216,24 +245,36 @@ function renderAanmeldingen() {
   <?php
   }
 
+  function countTeams($data) {
+    $count = 0;
+    foreach ($data as $row) {
+        $count += $row->aantal_teams;
+    }
+    return $count;
+  }
+
   ?>
   
   <link rel="stylesheet" href="<?php echo plugins_url('style.css', __FILE__); ?>" type="text/css" media="all" />
   
   <div class="custom-plugin-content" style="margin: 20px;">
-      <h2>Zaterdag 4x4 (totaal <?= count($zaterdag4x4) ?>)</h2>
+      <h2>Zaterdag 4x4 (totaal <?= countTeams($zaterdag4x4) ?>)</h2>
       <?= renderTableZaterdagZondag($zaterdag4x4) ?>
       <hr>
       
-      <h2>Zondag 4x4 (totaal <?= count($zondag4x4) ?>)</h2>
+      <h2>Zondag 4x4 (totaal <?= countTeams($zondag4x4) ?>)</h2>
       <?= renderTableZaterdagZondag($zondag4x4) ?>
       <hr>
+
+      <h2>Zondag 2x2 (totaal <?= countTeams($zondag2x2) ?>)</h2>
+      <?= renderTableZaterdagZondag($zondag2x2) ?>
+      <hr>
       
-      <h2>King of the Court (totaal <?= count($king) ?>)</h2>
+      <h2>King of the Court (totaal <?= countTeams($king) ?>)</h2>
       <?= renderTableZaterdagZondag($king) ?>
       <hr>
       
-      <h2>Bedrijven (totaal <?= count($bedrijven) ?>)</h2>
+      <h2>Bedrijven (totaal <?= countTeams($bedrijven) ?>)</h2>
       <?= renderTableBedrijven($bedrijven) ?>
       <hr>
   
